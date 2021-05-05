@@ -4,7 +4,7 @@ const pool = mysql.createPool(dbconfig);
 const auth = require('../utils')
 
 module.exports = {
-    async checkToken(req, res, next) {
+    async checkTokenStudent(req, res, next) {
         const bearer_token = req.headers.authorization;
         const array = bearer_token.split(' ')
         const token = array[1]
@@ -12,21 +12,48 @@ module.exports = {
         try {
             if(token === undefined) throw Error('Undefined Token')
             const verified = auth.verify(token)
-            const user_no = verified.user_no
+            const student_no = verified.student_no
+
             const email = verified.email
             const [ results ] = await pool.query(`
             SELECT
             COUNT(*) AS 'count'
-            FROM students AS s
-            INNER JOIN teachers AS t
-            WHERE s.enabled = 1
-            OR t.enabled = 1
-            AND s.no = ?
-            OR t.no = ?;
-            `, [ user_no, email ])
+            FROM students
+            WHERE enabled = 1
+            AND no = ?;
+            `, [ student_no ])
+            console.log(results);
             
             if (results.length === 0) throw Error('Unauthorized Error')
-            req.user = { user_no, email }
+            req.user = { student_no, email }
+            next()
+        }
+        catch (e) {
+            next(e)
+        }
+    },
+    async checkTokenTeacher(req, res, next) {
+        const bearer_token = req.headers.authorization;
+        const array = bearer_token.split(' ')
+        const token = array[1]
+
+        try {
+            if(token === undefined) throw Error('Undefined Token')
+            const verified = auth.verify(token)
+            const teacher_no = verified.teacher_no
+
+            const email = verified.email
+            const [ results ] = await pool.query(`
+            SELECT
+            COUNT(*) AS 'count'
+            FROM teachers
+            WHERE enabled = 1
+            AND no = ?;
+            `, [ teacher_no ])
+            console.log(results);
+            
+            if (results.length === 0) throw Error('Unauthorized Error')
+            req.user = { teacher_no, email }
             next()
         }
         catch (e) {

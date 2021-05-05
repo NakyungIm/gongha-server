@@ -44,7 +44,7 @@ const controller = {
           if (results.length > 0) {
             const user_no = results[0].no
             const email = results[0].email
-            const token = utils.sign({ user_no, email })
+            const token = utils.sign({ student_no, email })
             
             res.status(200).json({
                 message: "학생 로그인 완료",

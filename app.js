@@ -14,7 +14,8 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use('/student', require('./routes/student'));
-
+app.use('/teacher', require('./routes/teacher'));
+app.use('/schedule', require('./routes/schedule'));
 
 app.listen(process.env.PORT, async () => {
     console.log(`The ${ name } starts at ${process.env.PORT}(${ version })`);

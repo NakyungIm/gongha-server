@@ -44,7 +44,7 @@ const controller = {
             INSERT INTO
             teachers(name, email, password, region, background, age)
             VALUE
-            (?, ?, PASSWORD(?), ?, ?, ?)
+            (?, ?, PASSWORD(?), ?, ?, ?);
           `,
             [name, email, password, region, background, age]
           );
@@ -97,10 +97,10 @@ const controller = {
 
   async teacher(req, res) {
     try {
-      const teacher_no = req.params.no;
+      const teacher_no = req.user.teacher_no;
       const [results] = await pool.query(
         `
-            SELECT no, name, email, password, region, background
+            SELECT no, name, email, region, background
             FROM teachers
             WHERE enabled=1
             AND no = ?;
@@ -125,7 +125,7 @@ const controller = {
     try {
       const [results] = await pool.query(
         `
-            SELECT no, name, email, password, region, background
+            SELECT no, name, email, region, background
             FROM teachers
             WHERE enabled=1
         `
@@ -146,14 +146,21 @@ const controller = {
 
   async editTeacher(req, res) {
     try {
-      // const teacher_no = req.params.no;
-      const teacher_no = req.body.no;
-      console.log(teacher_no);
+      const teacher_no = req.user.teacher_no;
 
       const email = req.body.email;
       const password = req.body.password;
       const region = req.body.region;
       const background = req.body.background;
+
+      const [ result ] = await pool.query(`
+      SELECT * 
+      FROM teachers 
+      WHERE no = ?
+      AND enabled = 1;
+      `, [ teacher_no ])
+
+      if (result.length < 1) res.status(403).json({ message: "해당 선생님이 존재하지 않음"})
 
       const connection = await pool.getConnection(async (conn) => conn);
       try {

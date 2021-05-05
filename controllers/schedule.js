@@ -1,16 +1,17 @@
 const mysql = require('mysql2/promise');
 const dbconfig = require('../config/index').mysql
 const pool = mysql.createPool(dbconfig)
-const dayjs = require('dayjs');
+
 require('dayjs/locale/ko');
+const utils = require('../utils')
 
 const controller = {
     async monthlySchedule(req, res){ 
         try{
-            //const start_date = dayjs(param(query, 'start_date')).format('YYYY-MM');
-            //const end_date = dayjs(param(query, 'start_date')).add(1, 'month').format('YYYY-MM-DD');
-            console.log(req);
-            body = req.body;
+
+            const start_date = req.query.start_date
+
+            const body = req.body;
             const [ results ] = await pool.query(`
             SELECT
             no, link_no, title, content, start_datetime, end_datetime, create_datetime, update_datetime, delete_datetime
@@ -18,10 +19,10 @@ const controller = {
             WHERE enabled = 1
             `)
 
-            //format.changeDate(results);
-            
+            utils.formatting_datetime(results)
+
             res.status(201).json({
-                result: results,
+                schedules: results,
                 message: "it's okay"
             })
         } catch (e) {
@@ -45,15 +46,7 @@ const controller = {
             (?, ?, ?, ?, ?)
             `, [body.link_no, body.title, body.content, body.start_datetime, body.end_datetime])
 
-            const [ result1 ] = await pool.query(`
-            SELECT
-            no, link_no, title, content, start_datetime, end_datetime
-            FROM schedules
-            WHERE enabled = 1
-            `)
-
             res.status(201).json({
-                result: result1,
                 message: "The schedule has been created normally."
             })
         } catch (e) {
@@ -66,7 +59,18 @@ const controller = {
 
     async editSchedule(req, res){
         try{
+            
             body = req.body;
+
+            const [ result1 ] = await pool.query(`
+            SELECT
+            no, link_no, title, content, start_datetime, end_datetime, create_datetime, update_datetime, delete_datetime
+            FROM schedules
+            WHERE no = ?
+            `, [body.no])
+
+            if (result1.length < 1) res.status(403).json({ message: "해당 일정이 존재하지 않음"})
+
             const [ result ] = await pool.query(`
             UPDATE
             schedules
@@ -78,15 +82,7 @@ const controller = {
             WHERE no = ?
             `, [body.title, body.content, body.start_datetime, body.end_datetime, body.no])
 
-            const [ result1 ] = await pool.query(`
-            SELECT
-            no, link_no, title, content, start_datetime, end_datetime, create_datetime, update_datetime, delete_datetime
-            FROM schedules
-            WHERE no = ?
-            `, [body.no])
-
             res.status(201).json({
-                result: result1,
                 message: "The schedule has been updated normally."
             })
         } catch (e) {
@@ -99,6 +95,17 @@ const controller = {
     async removeSchedule(req, res){
         try{
             body = req.body;
+
+            const [ result1 ] = await pool.query(`
+            SELECT
+            *
+            FROM schedules
+            WHERE no = ?
+            AND enabled = 1
+            `, [body.no])
+
+            if (result1.length < 1) res.status(403).json({ message: "해당 일정이 존재하지 않음"})
+
             const [ result ] = await pool.query(`
             UPDATE
             schedules
@@ -107,19 +114,8 @@ const controller = {
             enabled = 0
             WHERE no = ?
             `, [body.no])
-            if (result.length < 1) throw json({
-                message: "The schedule has already been deleted."
-            })
-
-            const [ result1 ] = await pool.query(`
-            SELECT
-            *
-            FROM schedules
-            WHERE no = ?
-            `, [body.no])
 
             res.status(201).json({
-                result: result1,
                 message: "The schedule has been deleted normally."
             })
         } catch (e) {
