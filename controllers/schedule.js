@@ -8,22 +8,19 @@ const utils = require('../utils')
 const controller = {
     async monthlySchedule(req, res){ 
         try{
-
-            const start_date = req.query.start_date
-
-            const body = req.body;
+            const query = req.query
             const [ results ] = await pool.query(`
             SELECT
             no, link_no, title, content, start_datetime, end_datetime, create_datetime, update_datetime, delete_datetime
             FROM schedules
             WHERE enabled = 1
-            `)
+            AND link_no = ?
+            `, [query.link_no])
 
             utils.formatting_datetime(results)
 
-            res.status(201).json({
-                schedules: results,
-                message: "it's okay"
+            res.status(200).json({
+                schedules: results
             })
         } catch (e) {
             res.json({
@@ -33,7 +30,28 @@ const controller = {
     },
 
     async readSchedule(req, res){ 
-        res.status(201).json({ message: 'ok'});
+        try{
+            const query = req.query;
+            const [ results ] = await pool.query(`
+            SELECT
+            no, link_no, title, content, start_datetime, end_datetime, create_datetime, update_datetime, delete_datetime
+            FROM schedules
+            WHERE enabled = 1
+            AND no = ?
+            `, [query.schedule_no])
+            
+            utils.formatting_datetime(results)
+            
+            if (results.length < 1) res.status(403).json({ message: "해당 일정이 존재하지 않음"})
+
+            res.status(200).json({
+                schedules: results
+            })
+        } catch (e) {
+            res.json({
+                message: e
+            })
+        }
     },
 
     async addSchedule(req, res) {
@@ -47,7 +65,7 @@ const controller = {
             `, [body.link_no, body.title, body.content, body.start_datetime, body.end_datetime])
 
             res.status(201).json({
-                message: "The schedule has been created normally."
+                message: "해당 일정이 정상적으로 추가됨"
             })
         } catch (e) {
             res.json({
@@ -67,6 +85,7 @@ const controller = {
             no, link_no, title, content, start_datetime, end_datetime, create_datetime, update_datetime, delete_datetime
             FROM schedules
             WHERE no = ?
+            AND enabled = 1
             `, [body.no])
 
             if (result1.length < 1) res.status(403).json({ message: "해당 일정이 존재하지 않음"})
@@ -75,15 +94,17 @@ const controller = {
             UPDATE
             schedules
             SET
+            link_no = ?,
             title = ?,
             content = ?,
             start_datetime = ?,
             end_datetime = ?
             WHERE no = ?
-            `, [body.title, body.content, body.start_datetime, body.end_datetime, body.no])
+            AND enabled = 1
+            `, [body.link_no, body.title, body.content, body.start_datetime, body.end_datetime, body.no])
 
-            res.status(201).json({
-                message: "The schedule has been updated normally."
+            res.status(200).json({
+                message: "해당 일정이 정상적으로 수정됨"
             })
         } catch (e) {
             res.json({
@@ -115,8 +136,8 @@ const controller = {
             WHERE no = ?
             `, [body.no])
 
-            res.status(201).json({
-                message: "The schedule has been deleted normally."
+            res.status(200).json({
+                message: "해당 일정이 정상적으로 삭제됨"
             })
         } catch (e) {
             res.json({
