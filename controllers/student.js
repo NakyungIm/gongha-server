@@ -82,7 +82,7 @@ const controller = {
   },
   async editStudentInfo(req, res, next) {
     try {
-      const student_no = req.user.user_no
+      const student_no = req.user.student_no
       const student = req.body
 
       const [result] = await pool.query(`
