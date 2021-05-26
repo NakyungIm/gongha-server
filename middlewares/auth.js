@@ -22,7 +22,6 @@ module.exports = {
             WHERE enabled = 1
             AND no = ?;
             `, [student_no])
-            console.log("students", results);
 
             if (results[0].count === 0) throw Error('Unauthorized Error')
             req.user = { student_no, email }
@@ -50,7 +49,6 @@ module.exports = {
             WHERE enabled = 1
             AND no = ?;
             `, [teacher_no])
-            console.log(results);
 
             if (results[0].count === 0) throw Error('Unauthorized Error')
             req.user = { teacher_no, email }
