@@ -12,7 +12,7 @@ const controller = {
     });
   },
 
-  async signUp(req, res) {
+  async createTeacher(req, res) {
     try {
       const name = req.body.name;
       const email = req.body.email;
@@ -65,7 +65,7 @@ const controller = {
     }
   },
 
-  async login(req, res) {
+  async loginTeacher(req, res) {
     try {
       const email = req.body.email;
       const password = req.body.password;
@@ -95,9 +95,9 @@ const controller = {
     }
   },
 
-  async teacher(req, res) {
+  async getTeacherInfo(req, res) {
     try {
-      const teacher_no = req.params.no;
+      const teacher_no = req.query.no;
       const [results] = await pool.query(
         `
             SELECT no, name, email, password, region, background
@@ -144,7 +144,7 @@ const controller = {
     }
   },
 
-  async editTeacher(req, res) {
+  async editTeacherInfo(req, res) {
     try {
       // const teacher_no = req.params.no;
       const teacher_no = req.body.no;

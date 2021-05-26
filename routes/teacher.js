@@ -4,10 +4,10 @@ const teacher = require('../controllers/teacher');
 const { checkToken } = require('../middlewares/auth');
 
 router.get('/ping', teacher.ping);
-router.get('/', checkToken, teacher.teachers);
-router.get('/:no', checkToken, teacher.teacher);
-router.post('/signup', teacher.signUp);
-router.post('/login', teacher.login);
-router.put('/', checkToken, teacher.editTeacher);
+router.post('/', teacher.createTeacher);
+router.post('/login', teacher.loginTeacher);
+router.get('/list', checkToken, teacher.teachers);
+router.get('/', checkToken, teacher.getTeacherInfo);
+router.put('/', checkToken, teacher.editTeacherInfo);
 
 module.exports = router;
