@@ -9,6 +9,7 @@ router.post('/login', teacher.loginTeacher);
 router.get('/list', checkTokenTeacher, teacher.teachers);
 router.get('/', checkTokenTeacher, teacher.getTeacherInfo);
 router.put('/', checkTokenTeacher, teacher.editTeacherInfo);
-router.get('/', checkTokenTeacher, teacher.searchStudent)
+router.get('/searchStudent', checkTokenTeacher, teacher.searchStudent)
+router.get('/connect', checkTokenTeacher, teacher.connectStudent)
 
 module.exports = router;
