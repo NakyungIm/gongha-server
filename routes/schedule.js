@@ -1,11 +1,13 @@
 const express = require('express')
 const router = express.Router()
 const schedule = require('../controllers/schedule')
+const { checkTokenTeacher } = require('../middlewares/auth');
 
-router.get('/list', schedule.monthlySchedule); // ¿ùº° ÀÏÁ¤ ¸®½ºÆ® Á¶È¸
-router.get('/', schedule.readSchedule); // ÀÏÁ¤ Á¶È¸
-router.post('/', schedule.addSchedule); // ÀÏÁ¤ »ý¼º
-router.put('/', schedule.editSchedule); // ÀÏÁ¤ ¼öÁ¤
-router.delete('/', schedule.removeSchedule); // ÀÏÁ¤ »èÁ¦
+
+router.get('/list', schedule.monthlySchedule); // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½È¸
+router.get('/', schedule.readSchedule); // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¸
+router.post('/', checkTokenTeacher, schedule.addSchedule); // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+router.put('/', checkTokenTeacher, schedule.editSchedule); // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+router.delete('/', checkTokenTeacher, schedule.removeSchedule); // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
 module.exports = router

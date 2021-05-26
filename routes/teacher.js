@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const teacher = require('../controllers/teacher');
-const { checkToken } = require('../middlewares/auth');
+const { checkTokenTeacher } = require('../middlewares/auth');
 
 router.get('/ping', teacher.ping);
 router.post('/', teacher.createTeacher);
