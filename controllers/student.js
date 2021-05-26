@@ -42,9 +42,9 @@ const controller = {
           `, [email, password])
 
       if (results.length > 0) {
-        const user_no = results[0].no
+        const student_no = results[0].no
         const email = results[0].email
-        const token = utils.sign({ user_no, email })
+        const token = utils.sign({ student_no, email })
 
         res.status(200).json({
           message: "학생 로그인 완료",
@@ -61,7 +61,7 @@ const controller = {
   },
   async getStudentInfo(req, res, next) {
     try {
-      const student_no = req.user.user_no
+      const student_no = req.user.student_no
 
       const [result] = await pool.query(`
           SELECT *
@@ -91,47 +91,6 @@ const controller = {
           WHERE no = ?
           AND enabled = 1;
           `, [student_no])
-
-      if (result.length < 1) res.status(403).json({ message: "해당 학생이 존재하지 않음" })
-
-      const connection = await pool.getConnection(async conn => conn)
-      try {
-        await connection.beginTransaction()
-        await connection.query(`
-            UPDATE students
-            SET
-            email = ?,
-            password = ?,
-            region = ?,
-            grade = ?
-            WHERE no = ?
-            AND enabled = 1;
-            `, [student.email, student.password, student.region, student.grade, student_no])
-
-        await connection.commit()
-        res.status(200).json({ message: "학생 정보 수정 완료" })
-
-      } catch (e) {
-        await connection.rollback()
-        next(e)
-      } finally {
-        connection.release()
-      }
-    } catch (e) {
-      next(e)
-    }
-  },
-  async searchStudent(req, res, next) {
-    try {
-      const student_no = req.user.user_no
-      const student_email = req.query
-
-      const [result] = await pool.query(`
-          SELECT * 
-          FROM students 
-          WHERE email = ?
-          AND enabled = 1;
-          `, [student_email])
 
       if (result.length < 1) res.status(403).json({ message: "해당 학생이 존재하지 않음" })
 

@@ -10,21 +10,21 @@ module.exports = {
         const token = array[1]
 
         try {
-            if(token === undefined) throw Error('Undefined Token')
+            if (token === undefined) throw Error('Undefined Token')
             const verified = auth.verify(token)
             const student_no = verified.student_no
 
             const email = verified.email
-            const [ results ] = await pool.query(`
+            const [results] = await pool.query(`
             SELECT
             COUNT(*) AS 'count'
             FROM students
             WHERE enabled = 1
             AND no = ?;
-            `, [ student_no ])
-            console.log(results);
-            
-            if (results.length === 0) throw Error('Unauthorized Error')
+            `, [student_no])
+            console.log("students", results);
+
+            if (results[0].count === 0) throw Error('Unauthorized Error')
             req.user = { student_no, email }
             next()
         }
@@ -38,21 +38,21 @@ module.exports = {
         const token = array[1]
 
         try {
-            if(token === undefined) throw Error('Undefined Token')
+            if (token === undefined) throw Error('Undefined Token')
             const verified = auth.verify(token)
             const teacher_no = verified.teacher_no
 
             const email = verified.email
-            const [ results ] = await pool.query(`
+            const [results] = await pool.query(`
             SELECT
             COUNT(*) AS 'count'
             FROM teachers
             WHERE enabled = 1
             AND no = ?;
-            `, [ teacher_no ])
+            `, [teacher_no])
             console.log(results);
-            
-            if (results.length === 0) throw Error('Unauthorized Error')
+
+            if (results[0].count === 0) throw Error('Unauthorized Error')
             req.user = { teacher_no, email }
             next()
         }
@@ -60,4 +60,4 @@ module.exports = {
             next(e)
         }
     }
-}                                                                                                                                       
+}

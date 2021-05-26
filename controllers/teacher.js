@@ -153,14 +153,14 @@ const controller = {
       const region = req.body.region;
       const background = req.body.background;
 
-      const [ result ] = await pool.query(`
+      const [result] = await pool.query(`
       SELECT * 
       FROM teachers 
       WHERE no = ?
       AND enabled = 1;
-      `, [ teacher_no ])
+      `, [teacher_no])
 
-      if (result.length < 1) res.status(403).json({ message: "해당 선생님이 존재하지 않음"})
+      if (result.length < 1) res.status(403).json({ message: "해당 선생님이 존재하지 않음" })
 
       const connection = await pool.getConnection(async (conn) => conn);
       try {
@@ -191,6 +191,46 @@ const controller = {
       }
     } catch (e) {
       console.log(e);
+    }
+  },
+  async searchStudent(req, res, next) {
+    try {
+      const student_email = req.query.email
+
+      const [result] = await pool.query(`
+          SELECT * 
+          FROM students 
+          WHERE email = ?
+          AND enabled = 1;
+          `, [student_email])
+
+      if (result.length < 1) res.status(403).json({ message: "해당 학생이 존재하지 않음" })
+
+      const connection = await pool.getConnection(async conn => conn)
+      try {
+        await connection.beginTransaction()
+        await connection.query(`
+            UPDATE students
+            SET
+            email = ?,
+            password = ?,
+            region = ?,
+            grade = ?
+            WHERE no = ?
+            AND enabled = 1;
+            `, [student.email, student.password, student.region, student.grade, student_no])
+
+        await connection.commit()
+        res.status(200).json({ message: "학생 정보 수정 완료" })
+
+      } catch (e) {
+        await connection.rollback()
+        next(e)
+      } finally {
+        connection.release()
+      }
+    } catch (e) {
+      next(e)
     }
   },
 };
