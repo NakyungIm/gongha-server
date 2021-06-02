@@ -121,6 +121,67 @@ const controller = {
       next(e)
     }
   },
+  async getStudentInfo(req, res, next) {
+    try {
+      const student_no = req.user.student_no
+
+      const [result] = await pool.query(`
+          SELECT *
+          FROM students
+          WHERE no = ?
+          AND enabled = 1
+          `, [student_no])
+
+      if (result.length < 1) res.status(403).json({ message: "해당 학생이 존재하지 않음" })
+
+      utils.formatting_datetime(result)
+
+      res.status(200).json(result[0])
+
+    } catch (e) {
+      next(e)
+    }
+  },
+  async getLinkno(req, res, next) {
+    try {
+      const student_no = req.user.student_no
+      const teacher_no = req.query.teacher_no
+
+      const [result] = await pool.query(`
+          SELECT * 
+          FROM links 
+          WHERE student_no = ?
+          AND teacher_no = ?
+          AND enabled = 1;
+          `, [student_no, teacher_no])
+
+      if (result.length < 1) res.status(403).json({ message: "해당 연결이 존재하지 않음" })
+      else res.status(200).json({ ...result[0] })
+
+    } catch (e) {
+      next(e)
+    }
+  },
+  async getLinklist(req, res, next) {
+    try {
+      const student_no = req.user.student_no
+
+      const [result] = await pool.query(`
+          SELECT * 
+          FROM links 
+          WHERE student_no = ?
+          AND enabled = 1;
+          `, [student_no])
+
+      if (result.length < 1) res.status(403).json({ message: "해당 연결이 존재하지 않음" })
+      else res.status(200).json({ result })
+
+    } catch (e) {
+      next(e)
+    }
+  },
+
+
 }
 
 module.exports = controller

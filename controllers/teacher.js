@@ -249,6 +249,45 @@ const controller = {
       console.log(e);
     }
   },
+  async getLinkno(req, res, next) {
+    try {
+      const student_no = req.query.student_no
+      const teacher_no = req.user.teacher_no
+
+      const [result] = await pool.query(`
+          SELECT * 
+          FROM links 
+          WHERE student_no = ?
+          AND teacher_no = ?
+          AND enabled = 1;
+          `, [student_no, teacher_no])
+
+      if (result.length < 1) res.status(403).json({ message: "해당 연결이 존재하지 않음" })
+      else res.status(200).json({ ...result[0] })
+
+    } catch (e) {
+      next(e)
+    }
+  },
+  async getLinklist(req, res, next) {
+    try {
+      const teacher_no = req.user.teacher_no
+
+      const [result] = await pool.query(`
+          SELECT * 
+          FROM links 
+          WHERE teacher_no = ?
+          AND enabled = 1;
+          `, [teacher_no])
+
+      if (result.length < 1) res.status(403).json({ message: "해당 연결이 존재하지 않음" })
+      else res.status(200).json({ result })
+
+    } catch (e) {
+      next(e)
+    }
+  },
+
 };
 
 module.exports = controller;
