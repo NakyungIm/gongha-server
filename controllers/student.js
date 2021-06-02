@@ -1,49 +1,56 @@
-// const { env, defaultPassword } = require('../config')
 const mysql = require('mysql2/promise');
 const dbconfig = require('../config/index').mysql;
 const pool = mysql.createPool(dbconfig);
 const utils = require('../utils');
+const { param } = require('../utils/params');
+const { error } = require('../utils/result');
 
 const controller = {
   async ping(req, res) {
-    res.status(201).json({
+    next({
       success: 1,
-      message: 'say hello',
+      message: 'student',
     });
   },
-  async createStudent(req, res) {
+  async createStudent(req, res, next) {
     try {
-      body = req.body;
-      const [result] = await pool.query(
-        `
-            INSERT INTO
-            students(name, email, password, region, grade, age)
-            VALUE
-            (?, ?, PASSWORD(?), ?, ?, ?);
-            `,
-        [
-          body.name,
-          body.email,
-          body.password,
-          body.region,
-          body.grade,
-          body.age,
-        ]
-      );
+      const body = req.body;
+      const name = param(body, 'name');
+      const email = param(body, 'email');
+      const password = param(body, 'password');
+      const region = param(body, 'region');
+      const grade = param(body, 'grade');
+      const age = param(body, 'age');
 
-      res.status(201).json({
-        message: '학생 회원가입 완료',
-      });
+      const connection = await pool.getConnection(async (conn) => conn);
+      try {
+        await connection.beginTransaction();
+        await connection.query(
+          `
+              INSERT INTO
+              students(name, email, password, region, grade, age)
+              VALUE
+              (?, ?, PASSWORD(?), ?, ?, ?);
+              `,
+          [name, email, password, region, grade, age]
+        );
+        await connection.commit();
+        next({ message: `회원가입이 완료되었습니다.` });
+      } catch (e) {
+        await connection.rollback();
+      } finally {
+        connection.release();
+      }
     } catch (e) {
-      res.status(code).json({
-        error: e,
-      });
+      next(e);
     }
   },
   async loginStudent(req, res, next) {
     try {
-      var email = req.body.email;
-      var password = req.body.password;
+      const body = req.body;
+      const email = param(body, 'email');
+      const password = param(body, 'password');
+
       const [results] = await pool.query(
         `
               SELECT * 
@@ -54,19 +61,13 @@ const controller = {
         [email, password]
       );
 
-      if (results.length > 0) {
+      if (results.length < 1) {
+        throw error(`이메일 또는 비밀번호가 일치하지 않습니다.`);
+      } else {
         const student_no = results[0].no;
         const email = results[0].email;
         const token = utils.sign({ student_no, email });
-
-        res.status(200).json({
-          message: '학생 로그인 완료',
-          token: token,
-        });
-      } else {
-        res.status(401).json({
-          message: '이메일 또는 비밀번호가 일치하지 않습니다.',
-        });
+        next({ token });
       }
     } catch (e) {
       next(e);
@@ -78,28 +79,28 @@ const controller = {
 
       const [result] = await pool.query(
         `
-          SELECT *
+          SELECT no, name, email, region, grade, age
           FROM students
           WHERE no = ?
-          AND enabled = 1
+          AND enabled = 1 
           `,
         [student_no]
       );
+      if (result.length < 1) throw error('해당 학생이 존재하지 않습니다.');
 
-      if (result.length < 1)
-        res.status(403).json({ message: '해당 학생이 존재하지 않음' });
-
-      utils.formatting_datetime(result);
-
-      res.status(200).json(result[0]);
+      next({ ...result[0] });
     } catch (e) {
       next(e);
     }
   },
   async editStudentInfo(req, res, next) {
     try {
-      const student_no = req.user.student_no
-      const student = req.body
+      const body = req.body;
+      const student_no = req.user.student_no;
+      const email = param(body, 'email');
+      const password = param(body, 'password');
+      const region = param(body, 'region');
+      const grade = param(body, 'grade');
 
       const [result] = await pool.query(
         `
@@ -111,37 +112,29 @@ const controller = {
         [student_no]
       );
 
-      if (result.length < 1)
-        res.status(403).json({ message: '해당 학생이 존재하지 않음' });
+      if (result.length < 1) throw error('해당 학생이 존재하지 않습니다.');
 
       const connection = await pool.getConnection(async (conn) => conn);
       try {
         await connection.beginTransaction();
         await connection.query(
           `
-            UPDATE students
-            SET
-            email = ?,
-            password = PASSWORD(?),
-            region = ?,
-            grade = ?
-            WHERE no = ?
-            AND enabled = 1;
-            `,
-          [
-            student.email,
-            student.password,
-            student.region,
-            student.grade,
-            student_no,
-          ]
+              UPDATE students
+              SET
+              email = ?,
+              password = PASSWORD(?),
+              region = ?,
+              grade = ?
+              WHERE no = ?
+              AND enabled = 1;
+              `,
+          [email, password, region, grade, student_no]
         );
 
         await connection.commit();
-        res.status(200).json({ message: '학생 정보 수정 완료' });
+        next({ message: '계정 정보가 정상적으로 변경되었습니다.' });
       } catch (e) {
         await connection.rollback();
-        next(e);
       } finally {
         connection.release();
       }
@@ -149,67 +142,49 @@ const controller = {
       next(e);
     }
   },
-  async getStudentInfo(req, res, next) {
-    try {
-      const student_no = req.user.student_no
 
-      const [result] = await pool.query(`
-          SELECT *
-          FROM students
-          WHERE no = ?
-          AND enabled = 1
-          `, [student_no])
-
-      if (result.length < 1) res.status(403).json({ message: "해당 학생이 존재하지 않음" })
-
-      utils.formatting_datetime(result)
-
-      res.status(200).json(result[0])
-
-    } catch (e) {
-      next(e)
-    }
-  },
   async getLinkno(req, res, next) {
     try {
-      const student_no = req.user.student_no
-      const teacher_no = req.query.teacher_no
+      const student_no = req.user.student_no;
+      const teacher_no = req.query.teacher_no;
 
-      const [result] = await pool.query(`
+      const [result] = await pool.query(
+        `
           SELECT * 
           FROM links 
           WHERE student_no = ?
           AND teacher_no = ?
           AND enabled = 1;
-          `, [student_no, teacher_no])
+          `,
+        [student_no, teacher_no]
+      );
 
-      if (result.length < 1) res.status(403).json({ message: "해당 연결이 존재하지 않음" })
-      else res.status(200).json({ ...result[0] })
-
+      if (result.length < 1) throw error('해당 연결이 존재하지 않습니다.');
+      next({ ...result[0] });
     } catch (e) {
-      next(e)
+      next(e);
     }
   },
   async getLinklist(req, res, next) {
     try {
-      const student_no = req.user.student_no
+      const student_no = req.user.student_no;
 
-      const [result] = await pool.query(`
+      const [result] = await pool.query(
+        `
           SELECT * 
           FROM links 
           WHERE student_no = ?
           AND enabled = 1;
-          `, [student_no])
+          `,
+        [student_no]
+      );
 
-      if (result.length < 1) res.status(403).json({ message: "해당 연결이 존재하지 않음" })
-      else res.status(200).json({ result })
-
+      if (result.length < 1) throw error('해당 연결이 존재하지 않습니다.');
+      next({ result });
     } catch (e) {
-      next(e)
+      next(e);
     }
   },
-
-
-}
+};
 
 module.exports = controller;
