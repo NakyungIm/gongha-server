@@ -6,7 +6,6 @@ const { checkToken } = require('../middlewares/auth');
 router.get('/ping', teacher.ping);
 router.post('/', teacher.createTeacher);
 router.post('/login', teacher.loginTeacher);
-router.get('/list', checkToken, teacher.teachers);
 router.get('/', checkToken, teacher.getTeacherInfo);
 router.put('/', checkToken, teacher.editTeacherInfo);
 router.get('/searchStudent', checkToken, teacher.searchStudent)
