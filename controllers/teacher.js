@@ -22,44 +22,46 @@ const controller = {
       const age = req.body.age;
       //   const student_count = req.body.student_count;
 
-      const [result] = await pool.query(
-        `
-        SELECT 
-        COUNT(*) AS 'count'
-        FROM teachers
-        WHERE enabled=1 
-        AND email = ?
-      `,
-        [email]
-      );
-      if (result[0].count > 0) {
-        // console.log(result);
-        res.json({ message: '이미 존재하는 계정입니다.' });
-      } else {
-        const connection = await pool.getConnection(async (conn) => conn);
-        try {
-          await connection.beginTransaction();
-          await connection.query(
-            `
+      //이메일 인증 시 이메일 존재 여부를 확인하기 떄문에 여기서 확인할 필요 x
+      // const [result] = await pool.query(
+      //   `
+      //   SELECT
+      //   COUNT(*) AS 'count'
+      //   FROM teachers
+      //   WHERE enabled=1
+      //   AND email = ?
+      // `,
+      //   [email]
+      // );
+
+      // if (result[0].count > 0) {
+      //   // console.log(result);
+      //   res.json({ message: '이미 존재하는 계정입니다.' });
+      // } else {
+      const connection = await pool.getConnection(async (conn) => conn);
+      try {
+        await connection.beginTransaction();
+        await connection.query(
+          `
             INSERT INTO
             teachers(name, email, password, region, background, age)
             VALUE
             (?, ?, PASSWORD(?), ?, ?, ?);
           `,
-            [name, email, password, region, background, age]
-          );
-          await connection.commit();
+          [name, email, password, region, background, age]
+        );
+        await connection.commit();
 
-          res.json({
-            message: '회원가입이 정상적으로 이루어졌습니다.',
-          });
-        } catch (e) {
-          await connection.rollback();
-          console.log(e);
-        } finally {
-          connection.release();
-        }
+        res.json({
+          message: '회원가입이 정상적으로 이루어졌습니다.',
+        });
+      } catch (e) {
+        await connection.rollback();
+        console.log(e);
+      } finally {
+        connection.release();
       }
+      // }
     } catch (e) {
       console.log(e);
     }
@@ -153,14 +155,18 @@ const controller = {
       const region = req.body.region;
       const background = req.body.background;
 
-      const [result] = await pool.query(`
+      const [result] = await pool.query(
+        `
       SELECT * 
       FROM teachers 
       WHERE no = ?
       AND enabled = 1;
-      `, [teacher_no])
+      `,
+        [teacher_no]
+      );
 
-      if (result.length < 1) res.status(403).json({ message: "해당 선생님이 존재하지 않음" })
+      if (result.length < 1)
+        res.status(403).json({ message: '해당 선생님이 존재하지 않습니다.' });
 
       const connection = await pool.getConnection(async (conn) => conn);
       try {
@@ -195,21 +201,26 @@ const controller = {
   },
   async searchStudent(req, res, next) {
     try {
-      const student_email = req.query.email
+      const student_email = req.query.email;
 
-      const [result] = await pool.query(`
+      const [result] = await pool.query(
+        `
           SELECT * 
           FROM students 
           WHERE email = ?
           AND enabled = 1;
-          `, [student_email])
+          `,
+        [student_email]
+      );
 
-      if (result.length < 1) res.status(403).json({ message: "해당 학생이 존재하지 않음" })
+      if (result.length < 1)
+        res.status(403).json({ message: '해당 학생이 존재하지 않습니다.' });
 
-      const connection = await pool.getConnection(async conn => conn)
+      const connection = await pool.getConnection(async (conn) => conn);
       try {
-        await connection.beginTransaction()
-        await connection.query(`
+        await connection.beginTransaction();
+        await connection.query(
+          `
             UPDATE students
             SET
             email = ?,
@@ -218,19 +229,26 @@ const controller = {
             grade = ?
             WHERE no = ?
             AND enabled = 1;
-            `, [student.email, student.password, student.region, student.grade, student_no])
+            `,
+          [
+            student.email,
+            student.password,
+            student.region,
+            student.grade,
+            student_no,
+          ]
+        );
 
-        await connection.commit()
-        res.status(200).json({ message: "학생 정보 수정 완료" })
-
+        await connection.commit();
+        res.status(200).json({ message: '학생 정보 수정 완료' });
       } catch (e) {
-        await connection.rollback()
-        next(e)
+        await connection.rollback();
+        next(e);
       } finally {
-        connection.release()
+        connection.release();
       }
     } catch (e) {
-      next(e)
+      next(e);
     }
   },
 };

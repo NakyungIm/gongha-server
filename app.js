@@ -1,9 +1,9 @@
-const express = require('express')
+const express = require('express');
 // const morgan = require('morgan');
 const dotenv = require('dotenv');
 //const path = require('path');
-const bodyParser = require('body-parser')
-const { name, version } = require('./package.json')
+const bodyParser = require('body-parser');
+const { name, version } = require('./package.json');
 
 dotenv.config();
 
@@ -16,7 +16,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use('/student', require('./routes/student'));
 app.use('/teacher', require('./routes/teacher'));
 app.use('/schedule', require('./routes/schedule'));
+app.use('/email', require('./routes/email'));
 
 app.listen(process.env.PORT, async () => {
-    console.log(`The ${name} starts at ${process.env.PORT}(${version})`);
-})
+  console.log(`The ${name} starts at ${process.env.PORT}(${version})`);
+});
