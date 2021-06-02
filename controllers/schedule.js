@@ -2,7 +2,6 @@ const mysql = require('mysql2/promise');
 const dbconfig = require('../config/index').mysql
 const pool = mysql.createPool(dbconfig)
 
-require('dayjs/locale/ko');
 const utils = require('../utils')
 
 const controller = {
@@ -11,7 +10,16 @@ const controller = {
             const query = req.query
             const link_no = query.link_no
 
-            const [ results ] = await pool.query(`
+            const [result] = await pool.query(`
+            SELECT *
+            FROM links
+            WHERE no = ?
+            AND enabled = 1;
+            `, [link_no])
+
+            if (result.length < 1) throw Error(`해당 link 존재하지 않음`)
+
+            const [results] = await pool.query(`
             SELECT
             no, link_no, title, content, start_datetime, end_datetime, create_datetime, update_datetime, delete_datetime
             FROM schedules
@@ -20,24 +28,28 @@ const controller = {
             `, [link_no])
 
             utils.formatting_datetime(results)
-
-            res.status(200).json({
-                schedules: results
-            })
+            next({ results })
         } catch (e) {
-            res.json({
-                message: e
-            })
+            next(e)
         }
     },
 
-    async readSchedule(req, res){ 
-        try{
+    async readSchedule(req, res) {
+        try {
             const query = req.query
             const schedule_no = query.schedule_no
             const link_no = query.link_no
 
-            const [ results ] = await pool.query(`
+            const [result] = await pool.query(`
+            SELECT *
+            FROM links
+            WHERE no = ?
+            AND enabled = 1;
+            `, [link_no])
+
+            if (result.length < 1) throw Error(`해당 link 존재하지 않음`)
+
+            const [results] = await pool.query(`
             SELECT
             no, link_no, title, content, start_datetime, end_datetime, create_datetime, update_datetime, delete_datetime
             FROM schedules
@@ -45,14 +57,12 @@ const controller = {
             AND no = ?
             AND link_no = ?
             `, [schedule_no, link_no])
-            
+
             utils.formatting_datetime(results)
 
-            if (results.length < 1) res.status(403).json({ message: "해당 일정이 존재하지 않음" })
+            if (results.length < 1) throw Error({ message: "해당 일정이 존재하지 않음" })
 
-            res.status(200).json({
-                schedules: results
-            })
+            next({ results })
         } catch (e) {
             res.json({
                 message: e
@@ -61,33 +71,67 @@ const controller = {
     },
 
     async addSchedule(req, res) {
-        try{
+        try {
             const body = req.body
             const link_no = req.query.link_no
+            const title = body.title
+            const content = body.content
+            const start_datetime = body.start_datetime
+            const end_datetime = body.end_datetime
+            const teacher_no = req.user.teacher_no
 
-            const [ result ] = await pool.query(`
-            INSERT INTO
-            schedules(link_no, title, content, start_datetime, end_datetime)
-            VALUE
-            (?, ?, ?, ?, ?)
-            `, [link_no, body.title, body.content, body.start_datetime, body.end_datetime])
+            const [result] = await pool.query(`
+            SELECT *
+            FROM links
+            WHERE no = ?
+            AND teacher_no = ?
+            AND enabled = 1;
+            `, [link_no, teacher_no])
 
-            res.status(201).json({
-                message: "해당 일정이 정상적으로 추가됨"
-            })
+            if (result.length < 1) throw Error(`해당 link 존재하지 않음`)
+
+            const connection = await pool.getConnection(async (conn) => conn)
+            try {
+                await connection.beginTransaction();
+                await connection.query(`
+                INSERT INTO
+                schedules(link_no, title, content, start_datetime, end_datetime)
+                VALUE
+                (?, ?, ?, ?, ?)
+                `, [link_no, title, content, start_datetime, end_datetime])
+                await connection.commit();
+                next({ message: "해당 일정이 정상적으로 추가됨" })
+            } catch (e) {
+                await connection.rollback();
+            } finally {
+                connection.release();
+            }
+
         } catch (e) {
-            res.json({
-                message: e
-            })
+            next(e)
         }
-
     },
+    async editSchedule(req, res) {
+        try {
 
-    async editSchedule(req, res){
-        try{
-            
             const body = req.body
+            const schedule_no = body.schedule_no
+            const title = body.title
+            const content = body.content
+            const start_datetime = body.start_datetime
+            const end_datetime = body.end_datetime
+            const teacher_no = req.user.teacher_no
             const link_no = req.query.link_no
+
+            const [result] = await pool.query(`
+            SELECT *
+            FROM links
+            WHERE no = ?
+            AND teacher_no = ?
+            AND enabled = 1;
+            `, [link_no, teacher_no])
+
+            if (result.length < 1) throw Error(`해당 link 존재하지 않음`)
 
             const [result1] = await pool.query(`
             SELECT
@@ -96,40 +140,57 @@ const controller = {
             WHERE enabled = 1
             AND no = ?
             AND link_no = ?
-            `, [body.no, link_no])
+            `, [schedule_no, link_no])
 
-            if (result1.length < 1) res.status(403).json({ message: "해당 일정이 존재하지 않음" })
+            if (result1.length < 1) throw Error({ message: "해당 일정이 존재하지 않음" })
 
-            else{
-                const [ result ] = await pool.query(`
-                UPDATE
-                schedules
-                SET
-                title = ?,
-                content = ?,
-                start_datetime = ?,
-                end_datetime = ?
-                WHERE enabled = 1
-                AND no = ?
-                AND link_no = ?
-                `, [body.title, body.content, body.start_datetime, body.end_datetime, body.no, link_no])
+            const connection = await pool.getConnection(async (conn) => conn)
+            try {
+                await connection.beginTransaction();
 
-                res.status(200).json({
-                    message: "해당 일정이 정상적으로 수정됨"
-                })
+                await connection.query(`
+                        UPDATE
+                        schedules
+                        SET
+                        title = ?,
+                        content = ?,
+                        start_datetime = ?,
+                        end_datetime = ?
+                        WHERE enabled = 1
+                        AND no = ?
+                        AND link_no = ?
+                        `, [title, content, start_datetime, end_datetime, schedule_no, link_no])
+
+                await connection.commit();
+                next({ message: "해당 일정이 정상적으로 수정됨" })
+
+            } catch (e) {
+                await connection.rollback()
+            } finally {
+                connection.release();
             }
 
         } catch (e) {
-            res.json({
-                message: e
-            })
+            next(e)
         }
     },
 
-    async removeSchedule(req, res){
-        try{
-            const no = req.body.no
+    async removeSchedule(req, res) {
+        try {
+            const schedule_no = req.body.schedule_no
             const link_no = req.query.link_no
+            const teacher_no = req.user.teacher_no
+
+            const [result] = await pool.query(`
+            SELECT *
+            FROM links
+            WHERE no = ?
+            AND teacher_no = ?
+            AND enabled = 1;
+            `, [link_no, teacher_no])
+
+            if (result.length < 1) throw Error(`해당 link 존재하지 않음`)
+
 
             const [result1] = await pool.query(`
             SELECT
@@ -138,12 +199,14 @@ const controller = {
             WHERE enabled = 1
             AND no = ?
             AND link_no = ?
-            `, [no, link_no])
+            `, [schedule_no, link_no])
 
-            if (result1.length < 1) res.status(403).json({ message: "해당 일정이 존재하지 않음" })
+            if (result1.length < 1) throw Error(`해당 일정이 존재하지 않음`)
 
-            else{
-                const [ result ] = await pool.query(`
+            const connection = await pool.getConnection((async) => async)
+            try {
+                await connection.beginTransaction();
+                await connection.query(`
                 UPDATE
                 schedules
                 SET
@@ -151,17 +214,16 @@ const controller = {
                 enabled = 0
                 WHERE no = ?
                 AND link_no = ?
-                `, [no, link_no])
-    
-                res.status(200).json({
-                    message: "해당 일정이 정상적으로 삭제됨"
-                })
+                `, [schedule_no, link_no])
+                next({ message: "해당 일정이 정상적으로 삭제됨" })
+            } catch (e) {
+                await connection.rollback();
+            } finally {
+                connection.release();
             }
 
         } catch (e) {
-            res.json({
-                message: e
-            })
+            next(e)
         }
     },
 };
