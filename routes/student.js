@@ -8,5 +8,7 @@ router.post('/', student.createStudent)
 router.post('/login', student.loginStudent)
 router.get('/', checkTokenStudent, student.getStudentInfo)
 router.put('/', checkTokenStudent, student.editStudentInfo)
+router.get('/link', checkTokenStudent, student.getLinkno)
+router.get('/linkList', checkTokenStudent, student.getLinklist)
 
 module.exports = router
