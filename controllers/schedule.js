@@ -99,7 +99,6 @@ const controller = {
             `, [body.no, link_no])
 
             if (result1.length < 1) res.status(403).json({ message: "해당 일정이 존재하지 않음" })
-            else {
 
             else{
                 const [ result ] = await pool.query(`
