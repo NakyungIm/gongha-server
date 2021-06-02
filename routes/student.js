@@ -11,4 +11,4 @@ router.put('/', checkToken, student.editStudentInfo)
 router.get('/link', checkToken, student.getLinkno)
 router.get('/linkList', checkToken, student.getLinklist)
 
-module.exports = router
+module.exports = router;
