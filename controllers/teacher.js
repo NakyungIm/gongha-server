@@ -118,6 +118,7 @@ const controller = {
       `,
         [teacher_no]
       );
+
       if (result.length < 1) throw error(`해당 선생님이 존재하지 않습니다.`);
 
       const connection = await pool.getConnection(async (conn) => conn);
@@ -137,7 +138,7 @@ const controller = {
         );
 
         await connection.commit();
-        next({ message: '계정 정보가 정상적으로 변경되었습니다.' });
+        next({ message: `계정 정보가 정상적으로 변경되었습니다.` });
       } catch (e) {
         await connection.rollback();
       } finally {
@@ -161,7 +162,7 @@ const controller = {
         [student_email]
       );
 
-      if (result.length < 1) throw error('해당 학생이 존재하지 않음');
+      if (result.length < 1) throw error(`해당 학생이 존재하지 않음`);
       next({ result });
     } catch (e) {
       next(e);
@@ -182,7 +183,7 @@ const controller = {
         [student_no]
       );
 
-      if (result.length < 1) throw error('해당 선생님이 존재하지 않습니다.');
+      if (result.length < 1) throw error(`해당 학생이 존재하지 않습니다.`);
 
       const connection = await pool.getConnection(async (conn) => conn);
       try {
@@ -197,7 +198,7 @@ const controller = {
           [teacher_no, student_no]
         );
         await connection.commit();
-        next({ message: '연결이 완료되었습니다.' });
+        next({ message: `연결이 완료되었습니다.` });
       } catch (e) {
         await connection.rollback();
       } finally {
@@ -223,7 +224,7 @@ const controller = {
         [student_no, teacher_no]
       );
 
-      if (result.length < 1) throw error('해당 연결이 존재하지 않습니다.');
+      if (result.length < 1) throw error(`해당 연결이 존재하지 않습니다.`);
       next({ ...result[0] });
     } catch (e) {
       next(e);
@@ -243,7 +244,7 @@ const controller = {
         [teacher_no]
       );
 
-      if (result.length < 1) throw error('해당 연결이 존재하지 않습니다.');
+      if (result.length < 1) throw error(`해당 연결이 존재하지 않습니다.`);
       next({ result });
     } catch (e) {
       next(e);
