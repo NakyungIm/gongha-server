@@ -26,7 +26,7 @@ const controller = {
         [email]
       );
 
-      if (result[0].count > 0) throw error('이미 존재하는 계정입니다.');
+      if (result[0].count > 0) throw error(`이미 존재하는 계정입니다.`);
 
       const auth_num = Math.random().toString().substr(2, 6);
       let emailTemplete;
@@ -44,7 +44,7 @@ const controller = {
       const mailOptions = {
         from: `GongHa`,
         to: req.body.email,
-        subject: '[GongHa] 회원가입을 위한 인증번호입니다.',
+        subject: `[GongHa] 회원가입을 위한 인증번호입니다.`,
         html: emailTemplete,
       };
 
